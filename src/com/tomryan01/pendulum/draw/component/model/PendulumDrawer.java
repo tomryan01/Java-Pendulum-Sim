@@ -8,10 +8,15 @@ public abstract class PendulumDrawer extends ComponentDrawer {
 
     protected int posX;
     protected int posY;
+    protected int rootPosX;
+    protected int rootPosY;
     protected float width;
 
     public PendulumDrawer(){
+
         width = 8f;
+        rootPosX = SimulationParameters.SCREEN_WIDTH / 2;
+        rootPosY = SimulationParameters.PENDULUM_INITIAL_HEIGHT;
     }
 
     public void drawRod(Graphics g){
@@ -21,7 +26,13 @@ public abstract class PendulumDrawer extends ComponentDrawer {
 
         g2d.setColor(Color.black);
         g2d.setStroke(stroke);
-        g2d.drawLine(SimulationParameters.SCREEN_WIDTH / 2, SimulationParameters.PENDULUM_INITIAL_HEIGHT, posX, posY);
+        g2d.drawLine(rootPosX, rootPosY, posX, posY);
+    }
+
+    @Override
+    public void updateRootPos(int x, int y){
+        rootPosX = x;
+        rootPosY = y;
     }
 
     @Override
@@ -35,7 +46,7 @@ public abstract class PendulumDrawer extends ComponentDrawer {
 
     @Override
     public void paint(Graphics g){
-        super.paint(g);
+        //super.paint(g);
         draw(g);
     }
 }

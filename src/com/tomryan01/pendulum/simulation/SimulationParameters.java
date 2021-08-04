@@ -4,7 +4,7 @@ public class SimulationParameters {
 
     public static int GLOBAL_DELAY = 8; //ms
 
-    public static float PENDULUM_LENGTH = 150; //cm
+    public static float PENDULUM_LENGTH = 75; //cm
     public static int SCREEN_HEIGHT = 400;
     public static int SCREEN_WIDTH = 900;
     public static int PENDULUM_INITIAL_HEIGHT = SCREEN_HEIGHT / 3;

@@ -1,65 +1,69 @@
 package com.tomryan01.pendulum.control.model;
 
+import com.tomryan01.pendulum.draw.component.model.ComponentDrawer;
 import com.tomryan01.pendulum.draw.component.model.PendulumDrawer;
 import com.tomryan01.pendulum.simulation.SimulationParameters;
 
 import java.awt.*;
+import java.util.Map;
 
 public abstract class PendulumController extends PhysicsController {
 
-    private int newX;
-    private int newY;
-    protected int length;
-    public float freq;
+    protected int newX;
+    protected int newY;
+    public float freq = SimulationParameters.NAT_FREQUENCY;
 
-    public PendulumController(PendulumDrawer pendulumDrawer){
-
-        this.drawer = pendulumDrawer;
-        pos = SimulationParameters.START_ANGLE; //pos for a pendulum is an angle
-        length = (int) SimulationParameters.PENDULUM_LENGTH;
-        freq = SimulationParameters.NAT_FREQUENCY;
-        vel = 0; //vel for a pendulum is an angular velocity
-
-        motionEquation = (float pos) -> { return (float) (-1f * Math.pow(freq, 2f) * Math.sin(pos)); };
-
+    public PendulumController(Map<System, ComponentDrawer> drawer){
+        super(drawer);
     }
 
+
     @Override
-    public float getPos(){
+    public Map<System, Float> getPos(){
         return pos;
     }
 
     @Override
-    public void updatePositionOnly(float angle){
-        pos = angle;
+    public float getPos(System system){ return pos.get(system); }
 
-        newX = (int) Math.round((SimulationParameters.SCREEN_WIDTH / 2f) + (SimulationParameters.PENDULUM_LENGTH*Math.sin(angle)));
-        newY = (int) Math.round((SimulationParameters.PENDULUM_INITIAL_HEIGHT) + (SimulationParameters.PENDULUM_LENGTH*Math.cos(angle)));
+    @Override
+    public void updatePositionOnly(Map<System, Float> angle){
+        pos.forEach((key, value) -> {
+            pos.put(key, angle.get(key));
 
-        drawer.updatePos(newX, newY);
+            newX = (int) Math.round((SimulationParameters.SCREEN_WIDTH / 2f) + (SimulationParameters.PENDULUM_LENGTH*Math.sin(pos.get(key))));
+            newY = (int) Math.round((SimulationParameters.PENDULUM_INITIAL_HEIGHT) + (SimulationParameters.PENDULUM_LENGTH*Math.cos(pos.get(key))));
+
+            drawer.get(key).updatePos(newX, newY);
+        });
+
         repaint();
     }
 
     @Override
     public void paint(Graphics g){
-        drawer.paint(g);
+        drawer.forEach((key, value) -> {
+            drawer.get(key).paint(g);
+        });
     }
 
     @Override
     public void update(){
-        pos = velocityVerlet(pos, vel, motionEquation).get(0);
-        vel = velocityVerlet(pos, vel, motionEquation).get(1);
+        pos.forEach((key, value) -> {
+            velocityVerlet();
 
-        newX = (int) Math.round((SimulationParameters.SCREEN_WIDTH / 2f) + (SimulationParameters.PENDULUM_LENGTH*Math.sin(pos)));
-        newY = (int) Math.round((SimulationParameters.PENDULUM_INITIAL_HEIGHT) + (SimulationParameters.PENDULUM_LENGTH*Math.cos(pos)));
+            newX = (int) Math.round((SimulationParameters.SCREEN_WIDTH / 2f) + (SimulationParameters.PENDULUM_LENGTH*Math.sin(pos.get(key))));
+            newY = (int) Math.round((SimulationParameters.PENDULUM_INITIAL_HEIGHT) + (SimulationParameters.PENDULUM_LENGTH*Math.cos(pos.get(key))));
 
-        drawer.updatePos(newX, newY);
-        repaint();
+            drawer.get(key).updatePos(newX, newY);
+            repaint();
+        });
     }
 
     @Override
     public void reset(){
-        vel = 0;
-        pos = freq = SimulationParameters.NAT_FREQUENCY;
+        vel.forEach((key, value) -> {
+            vel.put(key, 0f);
+        });
     }
 }

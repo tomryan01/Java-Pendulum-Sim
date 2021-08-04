@@ -1,14 +1,20 @@
 package com.tomryan01.pendulum.simulation;
+import com.tomryan01.pendulum.control.DoubleSimplePendulumController;
 import com.tomryan01.pendulum.control.RodPendulumController;
 import com.tomryan01.pendulum.control.SimplePendulumController;
 import com.tomryan01.pendulum.control.model.PendulumController;
+import com.tomryan01.pendulum.control.model.System;
 import com.tomryan01.pendulum.draw.component.RodPendulumDrawer;
 import com.tomryan01.pendulum.draw.component.SimplePendulumDrawer;
+import com.tomryan01.pendulum.draw.component.model.ComponentDrawer;
+import jdk.dynalink.DynamicLinker;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class SimulationController implements ActionListener {
 
@@ -20,19 +26,42 @@ public class SimulationController implements ActionListener {
     private JButton rodPendulumButton;
     private JLabel posLabel;
     private JSlider startAngleSlider;
-    private String pendulumType = "rod";
+    private String pendulumType = "simple";
     private Boolean start = false;
     private JFrame f;
 
-    private SimplePendulumController simplePendulumController = new SimplePendulumController(new SimplePendulumDrawer());
-    private RodPendulumController rodPendulumController = new RodPendulumController(new RodPendulumDrawer());
+    private System simplePendulumSystem = new System(1);
+    private System rodPendulumSystem = new System(1);
+    private System firstDoubleSimplePendulumSystem = new System(1);
+    private System secondDoubleSimplePendulumSystem = new System(2);
+    private List<System> currentSystems;
+
+    private Map<System, ComponentDrawer> simplePendulumDrawerMap = new HashMap<>();
+    private Map<System, ComponentDrawer> rodPendulumDrawerMap = new HashMap<>();
+    private Map<System, ComponentDrawer> doubleSimplePendulumDrawerMap = new HashMap<>();
+
+    private SimplePendulumController simplePendulumController;
+    private RodPendulumController rodPendulumController;
+    private DoubleSimplePendulumController doubleSimplePendulumController;
 
     public SimulationController() {
         //Create main frame
         f = new JFrame();
 
-        //Set up pendulum controller
-        pendulumController = rodPendulumController;
+        //Set up system -> drawer map
+        simplePendulumDrawerMap.put(simplePendulumSystem, new SimplePendulumDrawer());
+        rodPendulumDrawerMap.put(rodPendulumSystem, new RodPendulumDrawer());
+        doubleSimplePendulumDrawerMap.put(firstDoubleSimplePendulumSystem, new SimplePendulumDrawer());
+        doubleSimplePendulumDrawerMap.put(secondDoubleSimplePendulumSystem, new SimplePendulumDrawer());
+
+        //Set up pendulum controllers
+        simplePendulumController = new SimplePendulumController(simplePendulumSystem, simplePendulumDrawerMap);
+        rodPendulumController = new RodPendulumController(rodPendulumSystem, rodPendulumDrawerMap);
+        doubleSimplePendulumController = new DoubleSimplePendulumController(List.of(firstDoubleSimplePendulumSystem, secondDoubleSimplePendulumSystem), doubleSimplePendulumDrawerMap);
+
+        //initiate initial controller
+        pendulumController = simplePendulumController;
+        currentSystems = List.of(simplePendulumSystem);
         pendulumController.setBounds(0, 0, SimulationParameters.SCREEN_WIDTH, SimulationParameters.SCREEN_HEIGHT);
 
         //create a start/stop button
@@ -83,17 +112,20 @@ public class SimulationController implements ActionListener {
             if(start) {
                 //this is the standard screen update that occurs every tick
                 pendulumController.update();
-                posLabel.setText(String.valueOf(pendulumController.getPos()));
+                posLabel.setText(String.valueOf(pendulumController.getPos(currentSystems.get(0))));
             } else{
                 //update start position of pendulum due to slider
-                pendulumController.updatePositionOnly(((float) startAngleSlider.getValue()) / 100);
+                //TODO: Change
+                pendulumController.updatePositionOnly(mapFromSystems(currentSystems, List.of((float) startAngleSlider.getValue() / 100)));
             }
         } else if(e.getSource() == startButton){
             start = !start;
             if(start){
                 startButton.setText("Stop");
+                pendulumController.reset();
             } else{
                 startButton.setText("Start");
+                pendulumController.reset();
             }
         } else if(e.getSource() == simplePendulumButton){
             if(!pendulumType.equals("simple")){
@@ -116,15 +148,27 @@ public class SimulationController implements ActionListener {
         switch(pendulumType){
             case "rod":
                 pendulumController = rodPendulumController;
+                currentSystems = List.of(rodPendulumSystem);
                 break;
             default:
                 pendulumController = simplePendulumController;
+                currentSystems = List.of(simplePendulumSystem);
                 break;
         }
         pendulumController.reset();
         pendulumController.setBounds(0, 0, SimulationParameters.SCREEN_WIDTH, SimulationParameters.SCREEN_HEIGHT);
         f.add(pendulumController);
-        pendulumController.updatePositionOnly(((float) startAngleSlider.getValue()) / 100);
+        //TODO: Change
+        pendulumController.updatePositionOnly(mapFromSystems(currentSystems, List.of((float) startAngleSlider.getValue() / 100)));
+    }
+
+    //TODO: Move to new class
+    private Map<System, Float> mapFromSystems(List<System> system, List<Float> value){
+        HashMap map = new HashMap<System, Float>();
+        system.forEach((element) -> {
+            map.put(element, value.get(system.indexOf(element)));
+        });
+        return map;
     }
 }
 
