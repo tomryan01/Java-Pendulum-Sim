@@ -12,7 +12,7 @@ public abstract class ComponentDrawer extends JComponent{
         //g.setColor(Color.white);
         //g.fillRect(0,0, SimulationParameters.SCREEN_WIDTH, SimulationParameters.SCREEN_HEIGHT);
     }
-     */
+    */
 
     abstract void draw(Graphics g);
 

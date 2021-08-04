@@ -1,31 +1,32 @@
 package com.tomryan01.pendulum.control;
 
-import com.tomryan01.pendulum.control.model.MotionEquation;
 import com.tomryan01.pendulum.control.model.PendulumController;
+import com.tomryan01.pendulum.control.model.equation.SingleValueMotionEquation;
 import com.tomryan01.pendulum.control.model.System;
-import com.tomryan01.pendulum.draw.component.SimplePendulumDrawer;
 import com.tomryan01.pendulum.draw.component.model.ComponentDrawer;
+import com.tomryan01.pendulum.simulation.SimulationParameters;
 
-import java.util.List;
 import java.util.Map;
 
-public class SimplePendulumController extends PendulumController {
+public class SimplePendulumController extends PendulumController<SingleValueMotionEquation> {
 
     //used to create a simple pendulum
     public SimplePendulumController(System system, Map<System, ComponentDrawer> drawer){
         super(drawer);
 
-        motionEquation.put(system, (float pos) -> { return (float) (-1f * Math.pow(freq, 2f) * Math.sin(pos)); });
+        motionEquation.put(system, (Float pos) -> { return (float) (-1f * Math.pow(freq, 2f) * Math.sin(pos)); });
 
     }
 
-    //used by double pendulum to call super()
-    protected SimplePendulumController(List<System> system, Map<System, ComponentDrawer> drawer){
-        super(drawer);
+    @Override
+    protected void integrator(){
 
-        system.forEach((element) -> {
-            motionEquation.put(element, (float pos) -> { return (float) (-1f * Math.pow(freq, 2f) * Math.sin(pos)); });
+        pos.forEach((key, value) -> {
+            float new_pos = (float) (pos.get(key) + vel.get(key) * SimulationParameters.GLOBAL_DELAY/1000 + 0.5f * motionEquation.get(key).equation(pos.get(key)) * Math.pow(SimulationParameters.GLOBAL_DELAY/1000f, 2));
+            float new_accel = motionEquation.get(key).equation(new_pos);
+            vel.put(key, vel.get(key) + 0.5f * (motionEquation.get(key).equation(pos.get(key)) + new_accel) * SimulationParameters.GLOBAL_DELAY/1000);
+            pos.put(key, new_pos);
         });
-
     }
+
 }

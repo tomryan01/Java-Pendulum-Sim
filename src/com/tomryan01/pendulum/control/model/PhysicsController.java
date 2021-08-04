@@ -10,12 +10,12 @@ import java.util.List;
 import java.util.Map;
 
 
-public abstract class PhysicsController extends JComponent {
+public abstract class PhysicsController<T> extends JComponent {
 
     protected Map<System, Float> pos = new HashMap<>();
     protected Map<System, Float> vel = new HashMap<>();
     protected Map<System, ComponentDrawer> drawer;
-    protected Map<System, MotionEquation> motionEquation = new HashMap<>();
+    protected Map<System, T> motionEquation = new HashMap<>();
 
     public PhysicsController(Map<System, ComponentDrawer> drawer){
         this.drawer = drawer;
@@ -30,20 +30,12 @@ public abstract class PhysicsController extends JComponent {
 
     public abstract void reset();
 
+    protected abstract void integrator();
+
     public abstract Map<System, Float> getPos();
 
     public abstract float getPos(System system);
 
     public abstract void updatePositionOnly(Map<System, Float> newPos);
-
-    public void velocityVerlet(){
-
-        pos.forEach((key, value) -> {
-            float new_pos = (float) (pos.get(key) + vel.get(key) * SimulationParameters.GLOBAL_DELAY/1000 + 0.5f * motionEquation.get(key).equation(pos.get(key)) * Math.pow(SimulationParameters.GLOBAL_DELAY/1000f, 2));
-            float new_accel = motionEquation.get(key).equation(new_pos);
-            vel.put(key, vel.get(key) + 0.5f * (motionEquation.get(key).equation(pos.get(key)) + new_accel) * SimulationParameters.GLOBAL_DELAY/1000);
-            pos.put(key, new_pos);
-        });
-    }
 
 }

@@ -24,9 +24,12 @@ public class SimulationController implements ActionListener {
     private JButton startButton;
     private JButton simplePendulumButton;
     private JButton rodPendulumButton;
-    private JLabel posLabel;
-    private JSlider startAngleSlider;
-    private String pendulumType = "simple";
+    private JButton simpleDoublePendulumButton;
+    private JLabel firstPosLabel;
+    private JLabel secondPosLabel;
+    private JSlider firstStartAngleSlider;
+    private JSlider secondStartAngleSlider;
+    private String pendulumType = "simpleDouble";
     private Boolean start = false;
     private JFrame f;
 
@@ -60,8 +63,8 @@ public class SimulationController implements ActionListener {
         doubleSimplePendulumController = new DoubleSimplePendulumController(List.of(firstDoubleSimplePendulumSystem, secondDoubleSimplePendulumSystem), doubleSimplePendulumDrawerMap);
 
         //initiate initial controller
-        pendulumController = simplePendulumController;
-        currentSystems = List.of(simplePendulumSystem);
+        pendulumController = doubleSimplePendulumController;
+        currentSystems = List.of(firstDoubleSimplePendulumSystem, secondDoubleSimplePendulumSystem);
         pendulumController.setBounds(0, 0, SimulationParameters.SCREEN_WIDTH, SimulationParameters.SCREEN_HEIGHT);
 
         //create a start/stop button
@@ -79,13 +82,26 @@ public class SimulationController implements ActionListener {
         rodPendulumButton.setBounds(SimulationParameters.WINDOW_WIDTH / 2 - 150/2 - 300, (SimulationParameters.SCREEN_HEIGHT + SimulationParameters.WINDOW_HEIGHT) / 2 + 100, 150, 40);
         rodPendulumButton.addActionListener(this);
 
+        //create button to switch to double pendulum
+        simpleDoublePendulumButton = new JButton("Double");
+        simpleDoublePendulumButton.setBounds(SimulationParameters.WINDOW_WIDTH / 2 - 150/2 - 300, (SimulationParameters.SCREEN_HEIGHT + SimulationParameters.WINDOW_HEIGHT) / 2, 150, 40);
+        simpleDoublePendulumButton.addActionListener(this);
+
         //create a label to display angle
-        posLabel = new JLabel("Angle: " +  SimulationParameters.START_ANGLE);
-        posLabel.setBounds(SimulationParameters.WINDOW_WIDTH / 2 - 75/2, (SimulationParameters.SCREEN_HEIGHT + SimulationParameters.WINDOW_HEIGHT) / 2 - 125, 75, 50);
+        firstPosLabel = new JLabel("Angle 1: " +  SimulationParameters.START_ANGLE);
+        firstPosLabel.setBounds(SimulationParameters.WINDOW_WIDTH / 2 - 75/2, (SimulationParameters.SCREEN_HEIGHT + SimulationParameters.WINDOW_HEIGHT) / 2 - 110, 75, 50);
+
+        //create a label to display angle
+        secondPosLabel = new JLabel("Angle 2: " +  SimulationParameters.START_ANGLE);
+        secondPosLabel.setBounds(SimulationParameters.WINDOW_WIDTH / 2 - 75/2, (SimulationParameters.SCREEN_HEIGHT + SimulationParameters.WINDOW_HEIGHT) / 2 - 75, 75, 50);
 
         //create a slider to set start angle
-        startAngleSlider = new JSlider(JSlider.HORIZONTAL, -314, 314, (int) SimulationParameters.START_ANGLE * 100);
-        startAngleSlider.setBounds(SimulationParameters.WINDOW_WIDTH / 2 - 200/2, (SimulationParameters.SCREEN_HEIGHT + SimulationParameters.WINDOW_HEIGHT) / 2 + 125, 200, 50);
+        firstStartAngleSlider = new JSlider(JSlider.HORIZONTAL, -314, 314, (int) SimulationParameters.START_ANGLE * 100);
+        firstStartAngleSlider.setBounds(SimulationParameters.WINDOW_WIDTH / 2 - 200/2, (SimulationParameters.SCREEN_HEIGHT + SimulationParameters.WINDOW_HEIGHT) / 2 + 75, 200, 50);
+
+        //create a slider to set start angle
+        secondStartAngleSlider = new JSlider(JSlider.HORIZONTAL, -314, 314, (int) SimulationParameters.START_ANGLE * 100);
+        secondStartAngleSlider.setBounds(SimulationParameters.WINDOW_WIDTH / 2 - 200/2, (SimulationParameters.SCREEN_HEIGHT + SimulationParameters.WINDOW_HEIGHT) / 2 + 110, 200, 50);
 
         //setup timer
         timer = new Timer(SimulationParameters.GLOBAL_DELAY, this);
@@ -96,10 +112,13 @@ public class SimulationController implements ActionListener {
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         f.add(startButton);
         f.add(pendulumController);
-        f.add(posLabel);
-        f.add(startAngleSlider);
+        f.add(firstPosLabel);
+        f.add(secondPosLabel);
+        f.add(firstStartAngleSlider);
+        f.add(secondStartAngleSlider);
         f.add(simplePendulumButton);
         f.add(rodPendulumButton);
+        f.add(simpleDoublePendulumButton);
         f.setLayout(null);
         f.setVisible(true);
     }
@@ -112,11 +131,11 @@ public class SimulationController implements ActionListener {
             if(start) {
                 //this is the standard screen update that occurs every tick
                 pendulumController.update();
-                posLabel.setText(String.valueOf(pendulumController.getPos(currentSystems.get(0))));
+                firstPosLabel.setText("Angle 1: " + String.valueOf(pendulumController.getPos(currentSystems.get(0))));
+                secondPosLabel.setText("Angle 2: " + String.valueOf(pendulumController.getPos(currentSystems.get(currentSystems.size() - 1))));
             } else{
                 //update start position of pendulum due to slider
-                //TODO: Change
-                pendulumController.updatePositionOnly(mapFromSystems(currentSystems, List.of((float) startAngleSlider.getValue() / 100)));
+                pendulumController.updatePositionOnly(mapFromSystems(currentSystems, List.of((float) firstStartAngleSlider.getValue() / 100, (float) secondStartAngleSlider.getValue() / 100)));
             }
         } else if(e.getSource() == startButton){
             start = !start;
@@ -139,6 +158,12 @@ public class SimulationController implements ActionListener {
                 updatePendulum();
                 pendulumController.update();
             }
+        } else if(e.getSource() == simpleDoublePendulumButton){
+            if(!pendulumType.equals("simpleDouble")){
+                pendulumType = "simpleDouble";
+                updatePendulum();
+                pendulumController.update();
+            }
         }
     }
 
@@ -146,20 +171,25 @@ public class SimulationController implements ActionListener {
     private void updatePendulum() {
         f.remove(pendulumController);
         switch(pendulumType){
+            case "simple":
+                pendulumController = simplePendulumController;
+                currentSystems = List.of(simplePendulumSystem);
+                break;
             case "rod":
                 pendulumController = rodPendulumController;
                 currentSystems = List.of(rodPendulumSystem);
                 break;
+            case "simpleDouble":
+                pendulumController = doubleSimplePendulumController;
+                currentSystems = List.of(firstDoubleSimplePendulumSystem, secondDoubleSimplePendulumSystem);
+                break;
             default:
-                pendulumController = simplePendulumController;
-                currentSystems = List.of(simplePendulumSystem);
                 break;
         }
         pendulumController.reset();
         pendulumController.setBounds(0, 0, SimulationParameters.SCREEN_WIDTH, SimulationParameters.SCREEN_HEIGHT);
         f.add(pendulumController);
-        //TODO: Change
-        pendulumController.updatePositionOnly(mapFromSystems(currentSystems, List.of((float) startAngleSlider.getValue() / 100)));
+        pendulumController.updatePositionOnly(mapFromSystems(currentSystems, List.of((float) firstStartAngleSlider.getValue() / 100, (float) secondStartAngleSlider.getValue() / 100)));
     }
 
     //TODO: Move to new class
